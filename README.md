@@ -80,3 +80,50 @@ This simplified pipeline automates the process of building a Docker image from y
 
 Keep in mind that real-world CI/CD pipelines might involve more complex scenarios, security considerations, and integrations with tools like Kubernetes, AWS, or other cloud platforms.
 
+
+
+
+
+
+
+pipeline {
+    agent any
+
+    environment {
+        DOCKER_IMAGE_NAME = "your-image-name"
+        DOCKER_CONTAINER_NAME = "your-container-name"
+    }
+
+    stages {
+        stage('Deploy Docker Container') {
+            steps {
+                script {
+                    def dockerImage = "${DOCKER_IMAGE_NAME}:${env.BUILD_NUMBER}"
+                    def containerName = "${DOCKER_CONTAINER_NAME}-${env.BUILD_NUMBER}"
+
+                    // Stop and remove the existing container if it exists
+                    try {
+                        sh "docker stop ${containerName} || true"
+                        sh "docker rm ${containerName} || true"
+                    } catch (Exception e) {
+                        echo "Error stopping/removing container: ${e}"
+                    }
+
+                    // Pull and run the new container
+                    sh "docker run -d --name ${containerName} -p 80:80 ${dockerImage}"
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Docker deployment was successful!'
+        }
+
+        failure {
+            echo 'Docker deployment failed!'
+        }
+    }
+}
+
